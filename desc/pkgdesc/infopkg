@@ -1,0 +1,17 @@
+# Nome do mantenedor do pacote
+mantenedor="Paulo Cezar"
+
+# Nome do pacote
+nomepacote="nano"
+
+# Verção do pacote
+versao="8.2"
+
+# Licença do software
+licenca="GPLv3"
+
+# Pequena descrição
+descricao="Simples editor de texto"
+
+# Homepage do projeto
+wwww="https://www.nano-editor.org/"

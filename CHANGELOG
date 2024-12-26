@@ -1,0 +1,6 @@
+[Version 1.2]
+    - Adicionado o removedor de pacotes
+
+[Version 1.1]
+    - Adicionado suporte a multipos pacotes ao bit-install
+    - Suporte a informações do pacote

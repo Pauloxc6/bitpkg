@@ -1,0 +1,156 @@
+#!/bin/bash
+
+#============================================================
+# Global Vars
+#============================================================
+
+export version="1.2"
+export pkgext="bit"
+
+# Desabilitando o suporte a unicode
+export LC_ALL=C
+export LANG=C
+
+# Saidas
+export sdterr="2>/dev/null"
+export stdout="1>/dev/null"
+
+# Arquivos Importantes
+heart_archives=(
+    '/etc/banana/banana.conf'
+    '/usr/libexec/banana/core.sh'
+)
+for heart_load in "${heart_archives[@]}"; do
+    source "$heart_load" || { echo "; ERROR ON LOAD \"$heart_load\", ABORT"; exit 1 ;}
+done
+
+#============================================================
+# Functions
+#============================================================
+
+function installpkg(){
+
+    _INPUT_NULL_PARAMETER
+
+    local pkg="$1"
+    local pkgname=$(basename $pkg .bit)
+
+    # Verificando o formato do pacote
+    if ! [ $(echo "$pkg" | grep -qE "-*\.bit")];then
+        echo "; O formato do pacote não é .bit!"
+        exit 1
+    fi
+
+    echo "; Iniciando a instalação o pacote [$1]!"
+
+    DESC "$1"
+
+    # Instalando o pacote
+    if tar xvf "$pkg" -C "${FAKE}/" | tee -a "${TRACK}/${pkgname}.track";then
+        echo "; Pacote $pkgname foi intalado com sucesso!"
+    else
+        echo "; Pacote $pkgname não foi instalado com sucesso!"
+        exit 1
+    fi
+
+    # Limpeza do Track
+    if sed -i "s/\.\/\//g" -e "/^$/d" -e "/^desc\/$/d" -e "/^desc/pkgdesc$/d" "${TRACK}/${pkgname}.track"; then
+        echo "; Limpeza executa com sucesso!"
+    else
+        echo "; Error na limpeza!"
+        exit 1
+    fi
+
+    return 0
+};
+
+function DESC() {
+
+    _INPUT_NULL_PARAMETER
+
+    local dirtemp=$(mktemp -d)
+    local pkg="$@"
+
+    if tar -tf "$pkg" "./desc/pkgdesc" "$stdout" "$sdterr"; then
+        if tar -xf "$pkg" -C "${dirtemp}" "./desc/pkgdesc" "$sdterr"; then
+            
+            . ${dirtemp}/desc/pkgdesc
+
+            echo "========================================================="
+            echo "Mantenedor: $mantenedor"
+            echo "Pacote: $nomepacote"
+            echo "Descrição: $descricao"
+            echo "========================================================="
+
+            echo
+
+        fi
+    else
+        echo "; Arquivo de descrição não exite!"
+    fi
+
+    [ -e "$dirtemp" ] && { rm -r "${dirtemp}" ;}
+};
+
+
+# Função de menu de ajuda
+function USAGE() {
+	cat <<EOF
+		bit-install - HELP
+
+		install
+			Instala pacotes no sistema criados com bit-create
+
+        --help
+            Exibe o menu de ajuda
+
+        --fake DIR, -f
+            Ao inves de instalar o software na raiz, instala em um
+            diretorio que voce especificar.
+
+		AUTOR : Paulo Cezar "Pauloxc6"
+EOF
+}
+#============================================================
+# Main
+#============================================================
+
+# Default: /var/log/bitinstalled | Rastreador de instalacao de pacote
+# $PWD/bit_installed é um diretorio de testes para o gerenciador
+
+TRACK="$PWD/bit_installed"
+
+[ ! -d "$TRACK" ] && mkdir -pv "$TRACK"
+
+# Ajuda 1
+if [ "$#" -lt 1 ];then
+    USAGE
+    exit 1
+fi
+
+# Paser
+while [ -n "$1" ];then
+    if [ "$1" = "--fake" || "$1" = "-f" ];then
+        shift
+        FAKE="$1"
+        shift
+        break
+    else if [ "$1" = "--help" ];then
+        USAGE
+        exit 1
+    fi
+done
+
+# Loop Principal
+while [ -n "$1" ]; do
+    if [ -e "$1" ]; then
+        installpkg "$1"
+        shift
+        continue
+    else
+        echo "; Pacote [$1] não existe!"
+        exit 1
+    fi
+done
+
+  

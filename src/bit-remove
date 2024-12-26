@@ -1,0 +1,105 @@
+#!/bin/bash
+
+#============================================================
+# Global Vars
+#============================================================
+
+export version="1.2"
+export pkgext="bit"
+
+# Desabilitando o suporte a unicode
+export LC_ALL=C
+export LANG=C
+
+# Saidas
+export sdterr="2>/dev/null"
+export stdout="1>/dev/null"
+
+# Arquivos Importantes
+heart_archives=(
+    '/etc/banana/banana.conf'
+    '/usr/libexec/banana/core.sh'
+)
+for heart_load in "${heart_archives[@]}"; do
+    source "$heart_load" || { echo "; ERROR ON LOAD \"$heart_load\", ABORT"; exit 1 ;}
+done
+
+# Default: /var/log/bitinstalled | Rastreador de instalacao de pacote
+# $PWD/bit_installed é um diretorio de testes para o gerenciador
+TRACK_DIR="$PWD/bit_installed"
+
+#============================================================
+# Functions
+#============================================================
+
+function FREMOVEPKG(){
+
+    _INPUT_NULL_PARAMETER
+
+    local pkgremove="$1"
+
+    # Removendo Arquivos e Links Simbolicos
+    while IFS= read thefile;do
+        if [ -f "/$thefile" ];then
+            rm "/$thefile" "$stdout" "$stderr" && echo "; Deleted: [$thefile]"
+        else if [ -L "/$thefile" ];then
+            unlink "/$thefile" "$stdout" "$stderr" && echo "; Unlink: [$thelink]"
+        fi
+    done < "$pkgremove"
+
+    # Removendos diretorios
+    while IFS= read thedir;do
+        rm -d "/$thedir"  "$stdout" "$stderr" && echo "; Deleted Dirs: [$thedir]"
+    done < "$pkgremove"
+
+    # Removendo o arquivo track
+    rm -v "$pkgremove"
+
+}
+
+# Função de menu de ajuda
+function USAGE() {
+	cat <<EOF
+		bit-remove - HELP
+
+		remove
+			Remove os pacotes instalados pelo bit-install.
+
+		AUTOR : Paulo Cezar "Pauloxc6"
+EOF
+}
+
+#============================================================
+# Main
+#============================================================
+
+[ -z "$1" ] && { echo "; Forneça um nome de pacote para remover."; exit 1 ;}
+
+# Ajuda 1
+if [ "$#" -lt 1 ]; then
+    USAGE
+    exit 1
+fi
+
+# Paser
+while [ -n "$1" ]; do
+    if [[ "$1" == "--help" ]]; then
+        USAGE
+        exit 1
+    fi
+done
+
+# Loop Principal
+while [ -n "$1" ]; do
+    cd $TRACK_DIR
+    count="0"
+    for pack in *;do
+        if [ $(grep -qw "$1") <<< "$pack" "$stdout" "$stderr" ]; then
+            PKG="$pack"
+            FREMOVEPKG "$1"
+            count=$((count + 1))
+            shift
+        fi
+    done
+    [ "$count" -lt "1" ] && { echo "; [$1] Não foi encontrado."; shift; continue; }
+done

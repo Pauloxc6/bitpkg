@@ -1,0 +1,249 @@
+#!/bin/bash
+
+#============================================================
+# Global Vars
+#============================================================
+
+export version="1.2"
+export pkgext="bit"
+
+# Desabilitando o suporte a unicode
+export LC_ALL=C
+export LANG=C
+
+# Saidas
+export sdterr="2>/dev/null"
+export stdout="1>/dev/null"
+
+# Arquivos Importantes
+heart_archives=(
+    '/etc/bitpkg/bitpkg.conf'
+    '/usr/libexec/bitpkg/core.sh'
+)
+for heart_load in "${heart_archives[@]}"; do
+    source "$heart_load" || { echo "; ERROR ON LOAD \"$heart_load\", ABORT"; exit 1 ;}
+done
+
+#============================================================
+# Functions
+#============================================================
+
+function CHECK_PKG() {
+
+	_INPUT_NULL_PARAMETER
+
+	# Salva o pacote em uma variavel local
+	local pkg_name="$@"
+
+	# Verifica o formato correto do pacote
+	if ! echo "$pkgext" | grep "$\b${pkgext}\b$"; then
+		printf '%s\n' "; O formato do pacote deve ser: ${pkgext}"
+		return 1
+	fi
+
+	# Verifica se espaços em branco no nome do pacote
+	if echo "$pkg_name" | grep -E "[[:space:]]+"; then
+		printf '%s\n' "; Não utilize espaços em branco no pacote."
+		printf '%s\n' "; Abortando a criação do pacote"
+		return 1
+	fi
+
+	# Verifica o formato da extenção (.bit) se está correto
+	vformat=$(echo "$pkg_name" | grep -o "-" | wc -l)
+	if [ $vformat -lt '2' || $vformat -gt '2' ];then
+		printf '%s\n' "; Error! Formatado errado para o pacote."
+		printf '%s\n' "; Formato: name-version-build.${pkgext}"
+		return 1
+	fi
+
+	return 0
+}
+
+function CREATE_PKG() {
+
+	_INPUT_NULL_PARAMETER
+
+	local pkg_name="$1"
+
+	# Verifica se a flag de verbose esta ativada, depois verifica se foi criado corretamente
+
+	if [ "$VERBOSE" = '1' ]; then
+		if tar -cvf ../${pkg_name} .; then
+				printf '%s\n' "; O pacote foi criado em ../${pkg_name}"
+                return 0
+      	 	else
+                printf '%s\n' "; O pacote não foi criado em ../${pkg_name}"
+                exit 1
+		fi
+	else
+		if tar -cf ../${pkg_name} .; then
+                printf '%s\n' "; O pacote foi criado em ../${pkg_name}"
+                return 0
+        	else
+                printf '%s\n' "; O pacote não foi criado em ../${pkg_name}"
+                exit 1
+		fi
+	fi
+
+	return 0
+}
+
+# Função de menu de ajuda
+function USAGE() {
+	cat <<EOF
+		bit-create - HELP
+
+		create, -c
+			Cria um pacote .bit. Precisa estar dentro do diretorio principal
+			do pacote para ser gerado. o Mesmo será gerado um diretório acima
+		verbose, -v
+
+		AUTOR : Paulo Cezar "Pauloxc6"
+EOF
+}
+
+function GENERATE_PKGDESC() {
+
+	_INPUT_NULL_PARAMETER
+	
+	local MANTENEDOR="$1"
+	local NOMEPACOTE="$2"
+	local VERSION="$3"
+
+	[[ ! -d "desc" ]]; mkdir desc || exit 1
+
+	cat <<EOF > desc/[$NOMEPACOTE].desc
+#============================================================================
+# Este arquivo é o coração do pacote, é necessário fazer
+# conferências, por isso é importante adicionar as informações corretamente.
+# Todas as variáveis ​​são obrigatórias! A matriz de dependências *dep* faz
+# não, mas é interessante adicionar para referência futura.
+#============================================================================
+# Nome do mantenedor do pacote
+#============================================================================
+
+mantenedor="$MANTENEDOR"
+
+#============================================================================
+# Nome do pacote
+#============================================================================
+
+nomepacote="$NOMEPACOTE"
+
+#============================================================================
+# Versão do pacote
+#============================================================================
+
+version="$VERSION"
+
+#============================================================================
+# Versão da Build
+#============================================================================
+
+build="$BUILD"
+
+#============================================================================
+# Licença do pacote
+#============================================================================
+
+lincese="$LINCESE"
+
+#============================================================================
+# Pequena descrição
+#============================================================================
+
+descricao=""
+
+#============================================================================
+# Homepage do projeto
+#============================================================================
+
+wwww=""
+
+#============================================================================
+
+EOF
+    echo -e "; [DESC] Criado com sucesso dentro do diretorio info"
+    exit 0
+
+}
+
+#============================================================
+
+if [ -z "$1" ];then
+	USAGE
+fi
+
+# PARSER
+while [ -n "$1" ]; do
+	case "$1" in
+		create)
+			CMD=$1
+			shift
+		;;
+
+		pkgdesc)
+			CMD=pkgdesc
+			shift
+		;;
+
+		verbose|-v)
+			VERBOSE=1 # 0 = OFF | 1 = ON
+			shift
+		;;
+
+		*.bit)
+			PKG=$1
+			shift
+		;;
+
+		--desc|-d)
+			shift
+
+			# Verifica o formato da extenção (.bit) se está correto
+			vformat=$(echo "$pkg_name" | grep -o "-" | wc -l)
+			if [ $vformat -lt '2' || $vformat -gt '2' ];then
+				printf '%s\n' "; Error! Formatado errado para o pacote."
+				printf '%s\n' "; Formato: bit-create -d name-version-build.${pkgext}"
+				return 1
+			elif [[ "$1" =~ .*-$ ]]; then # Termino com - ?
+            	echo -e "; [ERROR] Termine com numeros."
+            	exit 1
+			fi
+
+			inc='0' # Var incremento
+        	for take in 'field_one' 'field_two' 'field_three'; do
+            	inc=$(($inc + 1))
+            	eval $take="$(echo "$1" | cut -d '-' -f ${inc})" # Expanda e pegue o seu devido valor
+        	done
+
+			GENERATE_PKGDESC "$field_one" "$field_two" "$field_three" || exit 1
+			shift
+		;;
+
+		*) 
+			USAGE
+			exit 1
+		;;
+	esac
+done
+
+#============================================================
+# Main
+#============================================================
+
+case "$CMD" in
+	create)
+		if [ -z "$CMD" ]; then
+			printf '%s\n' "; Voce precisa fornecer um nome de pacote."
+			exit 1
+	    fi
+	    CHECK_PKG "$PKG" || exit 1
+	    CREATE_PKG "$PKG"
+	;;
+
+	pkgdesc)
+		GENERATE_PKGDESC
+	;;
+esac
+
