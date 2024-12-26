@@ -1,6 +1,9 @@
-# bitpkg :bit: :package: 🇧🇷 [![Bash4.4.18-shield]](http://tldp.org/LDP/abs/html/bashver4.html#AEN21220) [![LICENSE](https://img.shields.io/badge/Licen%C3%A7a-MIT-brightgreen.svg)](https://github.com/slackjeff/bananapkg/blob/master/LICENSE)
+# bitpkg :bit: :package: 🇧🇷 [![Bash4.4.18-shield]](http://tldp.org/LDP/abs/html/bashver4.html#AEN21220) [![LICENSE](https://img.shields.io/badge/Licen%C3%A7a-GPLv3-brightgreen.svg)](https://github.com/Pauloxc6/bitpkg/blob/master/LICENSE)
 
 > Gerenciador de Pacotes de baixo nível, escrito em Shell Bash.
+
+## [Ainda em Desenvolvimento]
+Este programa ainda está em fase de desnvolvimento.
 
 ## Instalação
 Instalação Direta 💻
