@@ -3,7 +3,7 @@
 > Gerenciador de Pacotes de baixo nível, escrito em Shell Bash.
 
 ## [Ainda em Desenvolvimento]
-Este programa ainda está em fase de desnvolvimento.
+Este programa ainda está em fase de desenvolvimento.
 
 ## Instalação
 Instalação Direta 💻
